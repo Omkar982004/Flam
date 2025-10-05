@@ -1,72 +1,76 @@
 package com.example.testapp
 
 import android.content.pm.PackageManager
-import android.graphics.SurfaceTexture
 import android.os.Bundle
-import android.view.TextureView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import android.opengl.GLSurfaceView
 import android.util.Log
+import com.example.gl.GLRenderer
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
-import org.opencv.android.Utils
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var textureView: TextureView
+    private lateinit var glSurfaceView: GLSurfaceView
     private lateinit var cameraHelper: CameraHelper
     private lateinit var nativeLib: NativeLib
+    private lateinit var glRenderer: GLRenderer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        textureView = findViewById(R.id.textureView)
-        cameraHelper = CameraHelper(this)
-
-        // Inside onCreate(), after cameraHelper = CameraHelper(this)
+        // Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
             Log.e("OpenCV", "Unable to load OpenCV")
         } else {
             Log.d("OpenCV", "OpenCV loaded successfully")
         }
 
-        // Runtime permission check
+        // GLSurfaceView setup
+        glSurfaceView = findViewById(R.id.glSurfaceView)
+        glSurfaceView.setEGLContextClientVersion(2)
+        glRenderer = GLRenderer()
+        glSurfaceView.setRenderer(glRenderer)
+        glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+
+        cameraHelper = CameraHelper(this)
+        nativeLib = NativeLib()
+
+        // Camera permission check
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED
         ) {
             ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA), 100)
         } else {
-            startCameraWhenReady()
-        }
-        // Inside onCreate()
-        nativeLib = NativeLib()
-    }
-
-    private fun startCameraWhenReady() {
-        textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
-            override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-                cameraHelper.openCamera(textureView)
-            }
-
-            override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
-            override fun onSurfaceTextureDestroyed(surface: SurfaceTexture) = true
-            override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-                val bitmap = textureView.bitmap ?: return
-                val mat = Mat()
-                Utils.bitmapToMat(bitmap, mat)
-                nativeLib.processFrame(mat.nativeObjAddr)
-                Utils.matToBitmap(mat, bitmap)
-                // Display back on TextureView if needed via ImageView
-            }
+            startCamera()
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+    private fun startCamera() {
+        // Camera frame callback delivers a processed Mat
+        cameraHelper.frameMatListener = { mat: Mat ->
+            // Process frame via JNI / OpenCV
+            nativeLib.processFrame(mat.nativeObjAddr)
+
+            // Send processed frame to GLRenderer
+            glRenderer.updateTexture(mat)
+            glSurfaceView.requestRender()
+        }
+
+        cameraHelper.openCamera() // Should deliver Mat frames instead of SurfaceTexture
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 100 && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startCameraWhenReady()
+            startCamera()
         }
     }
 

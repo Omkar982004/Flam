@@ -16,11 +16,16 @@ Java_com_example_testapp_NativeLib_processFrame(JNIEnv *env, jobject thiz, jlong
         return;
     }
 
-    cv::Mat edges;
-    cv::Canny(mat, edges, 50, 150);
+    cv::Mat gray, edges;
 
-    // Overwrite input Mat with result
-    edges.copyTo(mat);
+    // Convert from RGBA to GRAY
+    cv::cvtColor(mat, gray, cv::COLOR_RGBA2GRAY);
 
-    LOGD("Processed frame: %dx%d", mat.cols, mat.rows);
+    // Apply Canny edge detection
+    cv::Canny(gray, edges, 50, 150);
+
+    // Convert single-channel edges to 4-channel RGBA for OpenGL
+    cv::cvtColor(edges, mat, cv::COLOR_GRAY2RGBA);
+
+    LOGD("Processed frame (Canny): %dx%d", mat.cols, mat.rows);
 }
