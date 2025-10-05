@@ -1,9 +1,6 @@
 package com.example.gl
 
-import android.graphics.Bitmap
 import android.opengl.GLES20
-import android.opengl.GLUtils
-import org.opencv.android.Utils
 import org.opencv.core.Mat
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -11,13 +8,13 @@ import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import android.opengl.GLSurfaceView
+import org.opencv.core.CvType
 
 class GLRenderer : GLSurfaceView.Renderer {
 
     private var textureId: Int = -1
     @Volatile private var latestMat: Mat? = null
 
-    // Quad vertex coordinates (X, Y)
     private val vertices = floatArrayOf(
         -1f, 1f,
         -1f, -1f,
@@ -25,7 +22,6 @@ class GLRenderer : GLSurfaceView.Renderer {
         1f, -1f
     )
 
-    // Texture coordinates (S, T)
     private val texCoords = floatArrayOf(
         0f, 0f,
         0f, 1f,
@@ -35,11 +31,13 @@ class GLRenderer : GLSurfaceView.Renderer {
 
     private lateinit var vertexBuffer: FloatBuffer
     private lateinit var texBuffer: FloatBuffer
-
     private var program = 0
     private var positionHandle = 0
     private var texCoordHandle = 0
     private var textureHandle = 0
+
+    // Reusable buffer for RGBA data
+    private var rgbaBuffer: ByteBuffer? = null
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
@@ -56,14 +54,28 @@ class GLRenderer : GLSurfaceView.Renderer {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
         latestMat?.let { mat ->
-            if (!mat.empty()) {
+            if (!mat.empty() && mat.type() == CvType.CV_8UC4) { // Ensure 4 channels
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
 
-                // Convert Mat → Bitmap → OpenGL texture
-                val bitmap = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
-                Utils.matToBitmap(mat, bitmap)
-                GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
-                bitmap.recycle()
+                // Allocate buffer once
+                val neededCapacity = mat.rows() * mat.cols() * 4
+                if (rgbaBuffer == null || rgbaBuffer!!.capacity() != neededCapacity) {
+                    rgbaBuffer = ByteBuffer.allocateDirect(neededCapacity)
+                        .order(ByteOrder.nativeOrder())
+                }
+                rgbaBuffer!!.rewind()
+
+                // Use mat.get into a temporary array and put into direct buffer
+                val temp = ByteArray(neededCapacity)
+                mat.get(0, 0, temp)
+                rgbaBuffer!!.put(temp)
+                rgbaBuffer!!.position(0)
+
+                GLES20.glTexImage2D(
+                    GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA,
+                    mat.cols(), mat.rows(), 0,
+                    GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, rgbaBuffer
+                )
             }
         }
 
@@ -73,8 +85,6 @@ class GLRenderer : GLSurfaceView.Renderer {
     fun updateTexture(mat: Mat) {
         latestMat = mat
     }
-
-    // ------------------ OpenGL Helper Functions ------------------
 
     private fun createTexture(): Int {
         val textures = IntArray(1)
@@ -91,14 +101,12 @@ class GLRenderer : GLSurfaceView.Renderer {
         vertexBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-        vertexBuffer.put(vertices)
-        vertexBuffer.position(0)
+        vertexBuffer.put(vertices).position(0)
 
         texBuffer = ByteBuffer.allocateDirect(texCoords.size * 4)
             .order(ByteOrder.nativeOrder())
             .asFloatBuffer()
-        texBuffer.put(texCoords)
-        texBuffer.position(0)
+        texBuffer.put(texCoords).position(0)
     }
 
     private fun setupShader() {
@@ -143,19 +151,14 @@ class GLRenderer : GLSurfaceView.Renderer {
 
     private fun drawQuad() {
         GLES20.glUseProgram(program)
-
         GLES20.glEnableVertexAttribArray(positionHandle)
         GLES20.glEnableVertexAttribArray(texCoordHandle)
-
         GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer)
         GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, texBuffer)
-
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
         GLES20.glUniform1i(textureHandle, 0)
-
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
-
         GLES20.glDisableVertexAttribArray(positionHandle)
         GLES20.glDisableVertexAttribArray(texCoordHandle)
     }

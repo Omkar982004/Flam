@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
 
             // Send processed frame to GLRenderer
             glRenderer.updateTexture(mat)
-            glSurfaceView.requestRender()
+//            glSurfaceView.requestRender()
 
             // --- FPS counter logic ---
             frameCount++
