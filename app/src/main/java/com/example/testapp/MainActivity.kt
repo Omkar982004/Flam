@@ -10,6 +10,8 @@ import android.util.Log
 import com.example.gl.GLRenderer
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
+import android.widget.TextView
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,9 +20,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var nativeLib: NativeLib
     private lateinit var glRenderer: GLRenderer
 
+    // FPS tracking variables
+    private var lastTime = System.nanoTime()
+    private var frameCount = 0
+    private lateinit var fpsText: TextView
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
 
         // Initialize OpenCV
         if (!OpenCVLoader.initDebug()) {
@@ -29,6 +38,7 @@ class MainActivity : AppCompatActivity() {
             Log.d("OpenCV", "OpenCV loaded successfully")
         }
 
+        fpsText = findViewById(R.id.fpsText)
         // GLSurfaceView setup
         glSurfaceView = findViewById(R.id.glSurfaceView)
         glSurfaceView.setEGLContextClientVersion(2)
@@ -58,6 +68,21 @@ class MainActivity : AppCompatActivity() {
             // Send processed frame to GLRenderer
             glRenderer.updateTexture(mat)
             glSurfaceView.requestRender()
+
+            // --- FPS counter logic ---
+            frameCount++
+            val currentTime = System.nanoTime()
+            val elapsed = (currentTime - lastTime) / 1_000_000_000.0 // seconds
+            if (elapsed >= 1.0) {
+                val fps = frameCount / elapsed
+                runOnUiThread {
+                    fpsText.text = "FPS: %.1f".format(fps)
+                }
+                Log.d("FPS_COUNTER", "FPS: %.1f".format(fps))
+                frameCount = 0
+                lastTime = currentTime
+            }
+
         }
 
         cameraHelper.openCamera() // Should deliver Mat frames instead of SurfaceTexture

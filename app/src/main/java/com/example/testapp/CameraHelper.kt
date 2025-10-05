@@ -76,8 +76,8 @@ class CameraHelper(private val context: Context) {
         val characteristics = manager.getCameraCharacteristics(cameraId)
         val map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
         val chosenSize: Size = map?.getOutputSizes(ImageReader::class.java)
-            ?.firstOrNull { it.width <= 1280 && it.height <= 720 }
-            ?: Size(1280, 720)
+            ?.firstOrNull { it.width <= 640 && it.height <= 480 }
+            ?: Size(640, 480)
 
 
         // ---- Add rotation calculation here ----
