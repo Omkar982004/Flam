@@ -1,5 +1,6 @@
 package com.example.testapp
 
+import org.opencv.core.Core
 import android.content.Context
 import android.hardware.camera2.*
 import android.media.ImageReader
@@ -58,7 +59,16 @@ class CameraHelper(private val context: Context) {
             }
         }, cameraHandler)
     }
-
+    private fun rotateMat(mat: Mat, rotation: Int): Mat {
+        val rotated = Mat()
+        when (rotation) {
+            90 -> Core.transpose(mat, rotated).also { Core.flip(rotated, rotated, 1) }  // CW
+            180 -> Core.flip(mat, rotated, -1)
+            270 -> Core.transpose(mat, rotated).also { Core.flip(rotated, rotated, 0) } // CCW
+            else -> mat.copyTo(rotated)
+        }
+        return rotated
+    }
     private fun startPreview(cameraId: String) {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
@@ -68,6 +78,20 @@ class CameraHelper(private val context: Context) {
         val chosenSize: Size = map?.getOutputSizes(ImageReader::class.java)
             ?.firstOrNull { it.width <= 1280 && it.height <= 720 }
             ?: Size(1280, 720)
+
+
+        // ---- Add rotation calculation here ----
+        val cameraOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+        val deviceRotation = (context.getSystemService(Context.WINDOW_SERVICE) as android.view.WindowManager)
+            .defaultDisplay.rotation
+        val rotationDegrees = when (deviceRotation) {
+            android.view.Surface.ROTATION_0 -> 0
+            android.view.Surface.ROTATION_90 -> 90
+            android.view.Surface.ROTATION_180 -> 180
+            android.view.Surface.ROTATION_270 -> 270
+            else -> 0
+        }
+        val finalRotation = (cameraOrientation - rotationDegrees + 360) % 360
 
         // ImageReader to get YUV frames
         val reader = ImageReader.newInstance(
@@ -91,7 +115,11 @@ class CameraHelper(private val context: Context) {
                 val mat = Mat()
                 Utils.bitmapToMat(bitmap, mat)
 
-                frameMatListener?.invoke(mat)
+                // Rotate Mat to correct orientation
+                val rotatedMat = rotateMat(mat, finalRotation)
+
+                frameMatListener?.invoke(rotatedMat)
+
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
