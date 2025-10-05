@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         glSurfaceView.setEGLContextClientVersion(2)
         glRenderer = GLRenderer()
         glSurfaceView.setRenderer(glRenderer)
-        glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+        glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 
         cameraHelper = CameraHelper(this)
         nativeLib = NativeLib()
