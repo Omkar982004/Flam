@@ -20,6 +20,51 @@ demonstrate ability to bridge native processing results to a simple web layer.
   <img src="screenshots/webviewer.png" alt="Web Viewer" width="700"/>
 
 
+## Project Directory Structure
+
+```markdown
+project-root/
+│
+├── app/                                        
+│   ├── kotlin+java/com.example.testapp/
+│   │      └── CameraHelper.kt
+│   |      └── MainActivity.kt
+│   |      └── NativeLib.kt
+│   ├── build.gradle.kts          
+│   └── res/
+│         └── layout/
+│                └── activity_main.xml
+│       
+├── gl/
+│   ├── kotlin+java/com.example.gl/
+│   │            └── GLRenderer.kt
+│   └── build.gradle.kts
+│
+├── jni/
+│   ├── cpp/
+│   │     ├── includes/
+│   │     │      └── CMakeLists.txt  
+│   │     │      └── jni.cpp
+│   │     └── jniLibs/     
+│   └── build.gradle.kts
+│            
+├── OpenCV/
+│
+├── web/
+│   ├── index.html
+│   ├── src/
+│   │      ├── main.ts  
+│   │      └── utils.ts 
+│   ├── capture_raw.png  
+│   ├── capture_edges.png
+│   ├── package.json
+│   └── tsconfig.json
+│  
+└── README.md
+
+```
+
+
 ## Performance Notes
 - Resolution: 640x480 for ~30 FPS (Commit 3+6).
 - Direct Mat → ByteBuffer → OpenGL pipeline significantly reduces memory allocations.
@@ -87,51 +132,6 @@ demonstrate ability to bridge native processing results to a simple web layer.
 - Additional OpenCV filters for real-time processing.
 - Shader-level optimization for OpenGL rendering.
 - GPU-based YUV → RGBA conversion.
-
-## Project Directory Structure
-
-```markdown
-project-root/
-│
-├── app/                                        
-│   ├── kotlin+java/com.example.testapp/
-│   │      └── CameraHelper.kt
-│   |      └── MainActivity.kt
-│   |      └── NativeLib.kt
-│   ├── build.gradle.kts          
-│   └── res/
-│         └── layout/
-│                └── activity_main.xml
-│       
-├── gl/
-│   ├── kotlin+java/com.example.gl/
-│   │            └── GLRenderer.kt
-│   └── build.gradle.kts
-│
-├── jni/
-│   ├── cpp/
-│   │     ├── includes/
-│   │     │      └── CMakeLists.txt  
-│   │     │      └── jni.cpp
-│   │     └── jniLibs/     
-│   └── build.gradle.kts
-│            
-├── OpenCV/
-│
-├── web/
-│   ├── index.html
-│   ├── src/
-│   │      ├── main.ts  
-│   │      └── utils.ts 
-│   ├── capture_raw.png  
-│   ├── capture_edges.png
-│   ├── package.json
-│   └── tsconfig.json
-│  
-└── README.md
-
-```
-
 
 
 ## Dependencies and Build Files
