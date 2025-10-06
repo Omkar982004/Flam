@@ -6,26 +6,34 @@
 #define LOG_TAG "JNI_OpenCV"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
+// Global smoothed frame
+cv::Mat smoothedFrame;
+const float alpha = 0.25f; // smoothing factor
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_example_testapp_NativeLib_processFrame(JNIEnv *env, jobject thiz, jlong matAddr) {
     cv::Mat &mat = *(cv::Mat *) matAddr;
 
-    if (mat.empty()) {
-        LOGD("Mat is empty, skipping processing");
-        return;
-    }
+    if (mat.empty()) return;
 
     cv::Mat gray, edges;
 
-    // Convert from RGBA to GRAY
+    // Convert RGBA → Grayscale
     cv::cvtColor(mat, gray, cv::COLOR_RGBA2GRAY);
 
     // Apply Canny edge detection
     cv::Canny(gray, edges, 50, 150);
 
-    // Convert single-channel edges to 4-channel RGBA for OpenGL
-    cv::cvtColor(edges, mat, cv::COLOR_GRAY2RGBA);
+    // EMA smoothing
+    if (smoothedFrame.empty() || smoothedFrame.size() != edges.size()) {
+        edges.copyTo(smoothedFrame);
+    } else {
+        cv::addWeighted(edges, alpha, smoothedFrame, 1.0 - alpha, 0, smoothedFrame);
+    }
 
-    LOGD("Processed frame (Canny): %dx%d", mat.cols, mat.rows);
+    // Convert smoothed edges → RGBA
+    cv::cvtColor(smoothedFrame, mat, cv::COLOR_GRAY2RGBA);
+
+    LOGD("Processed frame (Canny + EMA): %dx%d", mat.cols, mat.rows);
 }
