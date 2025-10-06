@@ -11,6 +11,7 @@ import com.example.gl.GLRenderer
 import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
 import android.widget.TextView
+import android.widget.Button
 
 
 class MainActivity : AppCompatActivity() {
@@ -24,7 +25,10 @@ class MainActivity : AppCompatActivity() {
     private var lastTime = System.nanoTime()
     private var frameCount = 0
     private lateinit var fpsText: TextView
+    private lateinit var toggleModeButton: Button //added button
 
+    // Mode flag
+    private var isEdgeMode = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +43,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         fpsText = findViewById(R.id.fpsText)
+        toggleModeButton = findViewById(R.id.toggleModeButton) // Link button from XML
+
         // GLSurfaceView setup
         glSurfaceView = findViewById(R.id.glSurfaceView)
         glSurfaceView.setEGLContextClientVersion(2)
@@ -48,6 +54,12 @@ class MainActivity : AppCompatActivity() {
 
         cameraHelper = CameraHelper(this)
         nativeLib = NativeLib()
+
+        // Toggle between Raw and Edge-detected output
+        toggleModeButton.setOnClickListener {
+            isEdgeMode = !isEdgeMode
+            toggleModeButton.text = if (isEdgeMode) "Mode: Edges" else "Mode: Raw"
+        }
 
         // Camera permission check
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
@@ -63,7 +75,10 @@ class MainActivity : AppCompatActivity() {
         // Camera frame callback delivers a processed Mat
         cameraHelper.frameMatListener = { mat: Mat ->
             // Process frame via JNI / OpenCV
-            nativeLib.processFrame(mat.nativeObjAddr)
+            // Conditionally apply OpenCV edge processing
+            if (isEdgeMode) {
+                nativeLib.processFrame(mat.nativeObjAddr)
+            }
 
             // Send processed frame to GLRenderer
             glRenderer.updateTexture(mat)
