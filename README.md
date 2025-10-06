@@ -6,6 +6,26 @@ them using OpenCV in C++ (via JNI), and displays the processed output using
 OpenGL ES.Additionally, create a small TypeScript-based web page that can receive a dummy processed frame (static image or base64) and display it — to
 demonstrate ability to bridge native processing results to a simple web layer.
 
+### Screenshots / GIF of the Working App
+
+**Android App (Camera + Edge Detection)**  
+- Raw frame preview  
+  <img src="screenshots/app_raw.jpg" alt="Raw Frame" width="300"/>
+
+- Edge-detected frame preview  
+  <img src="screenshots/app_processed.jpg" alt="Processed Frame" width="300"/>
+
+**Web Viewer (Static Frame Display)**  
+- Toggle between Raw and Processed frames  
+  <img src="screenshots/webviewer.png" alt="Web Viewer" width="700"/>
+
+
+## Performance Notes
+- Resolution: 640x480 for ~30 FPS (Commit 3+6).
+- Direct Mat → ByteBuffer → OpenGL pipeline significantly reduces memory allocations.
+- Temporal smoothing applied optionally via JNI (Commit 7).
+- Continuous rendering mode used in GLSurfaceView for smooth frame updates.
+
 ## Tech Stack
 - **Android SDK (Kotlin):** Handles app UI, Camera2 API, and activity lifecycle.  
 - **NDK (Native Development Kit):** Enables writing and compiling C++ code for Android.  
@@ -60,26 +80,6 @@ demonstrate ability to bridge native processing results to a simple web layer.
 - Displays frames on a canvas with overlay: frame type, resolution, FPS.
 - Toggle button switches between Raw and Processed frames dynamically.
 
-
-### Screenshots / GIF of the Working App
-
-**Android App (Camera + Edge Detection)**  
-- Raw frame preview  
-  <img src="screenshots/app_raw.jpg" alt="Raw Frame" width="300"/>
-
-- Edge-detected frame preview  
-  <img src="screenshots/app_processed.jpg" alt="Processed Frame" width="300"/>
-
-**Web Viewer (Static Frame Display)**  
-- Toggle between Raw and Processed frames  
-  <img src="screenshots/webviewer.png" alt="Web Viewer" width="700"/>
-
-
-## Performance Notes
-- Resolution: 640x480 for ~30 FPS (Commit 3+6).
-- Direct Mat → ByteBuffer → OpenGL pipeline significantly reduces memory allocations.
-- Temporal smoothing applied optionally via JNI (Commit 7).
-- Continuous rendering mode used in GLSurfaceView for smooth frame updates.
 
 
 ## Future Improvements
