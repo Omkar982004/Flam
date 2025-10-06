@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Web Viewer - Toggle Frames</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="viewer-container">
+    <canvas id="frameCanvas" width="640" height="480"></canvas>
+    <div id="overlay">
+        Frame Type: <span id="frameType">Processed</span><br>
+        FPS: <span id="fps">28-32</span><br>
+        Resolution: <span id="resolution">640x480</span>
+    </div>
+    <button id="toggleBtn">Toggle Frame</button>
+</div>
+
+<script type="module" src="./dist/main.js"></script>
+</body>
+</html>

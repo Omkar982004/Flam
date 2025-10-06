@@ -1,0 +1,35 @@
+/* Center everything in the page */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: #f0f0f0;
+}
+
+#viewer-container {
+    position: relative;
+    display: inline-block;
+}
+
+/* Overlay at top-left of the canvas */
+#overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.5);
+    color: white;
+    padding: 4px 8px;
+    font-family: sans-serif;
+    font-size: 14px;
+    border-radius: 4px;
+    line-height: 1.4; /* spacing between lines */
+}
+
+#toggleBtn {
+    display: block;
+    margin: 10px auto 0;
+    padding: 5px 10px;
+    font-size: 14px;
+}

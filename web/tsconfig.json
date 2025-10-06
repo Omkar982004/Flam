@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    // Environment Settings
+    "target": "ES6",             // Modern JS
+    "module": "ES6",             // Browser-compatible modules
+    "rootDir": "./src",           // Source folder
+    "outDir": "./dist",           // Compiled JS output
+
+    // Strict Type-checking
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Useful Options
+    "esModuleInterop": true,     // Import CJS modules if needed
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "sourceMap": true            // Optional for debugging in browser
+  },
+  "include": ["src"]
+}

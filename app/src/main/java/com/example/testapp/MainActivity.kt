@@ -12,6 +12,10 @@ import org.opencv.android.OpenCVLoader
 import org.opencv.core.Mat
 import android.widget.TextView
 import android.widget.Button
+import org.opencv.android.Utils
+import android.graphics.Bitmap
+import java.io.File
+import java.io.FileOutputStream
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,6 +30,9 @@ class MainActivity : AppCompatActivity() {
     private var frameCount = 0
     private lateinit var fpsText: TextView
     private lateinit var toggleModeButton: Button //added button
+
+    private var latestFrame: Mat? = null // <-- Add this lin
+    private lateinit var captureButton: Button // Added capture button
 
     // Mode flag
     private var isEdgeMode = false
@@ -44,6 +51,7 @@ class MainActivity : AppCompatActivity() {
 
         fpsText = findViewById(R.id.fpsText)
         toggleModeButton = findViewById(R.id.toggleModeButton) // Link button from XML
+        captureButton = findViewById(R.id.captureButton)
 
         // GLSurfaceView setup
         glSurfaceView = findViewById(R.id.glSurfaceView)
@@ -61,6 +69,17 @@ class MainActivity : AppCompatActivity() {
             toggleModeButton.text = if (isEdgeMode) "Mode: Edges" else "Mode: Raw"
         }
 
+        // Capture button – set listener **once**
+        captureButton.setOnClickListener {
+            latestFrame?.let { mat ->
+                val timestamp = System.currentTimeMillis()
+                val fileName = if (isEdgeMode) "capture_edges_$timestamp.png" else "capture_raw_$timestamp.png"
+                val path = "${getExternalFilesDir(null)?.absolutePath}/$fileName"
+                if (isEdgeMode) nativeLib.processFrame(mat.nativeObjAddr)
+                saveMatAsPNG(mat, path)
+            }
+        }
+
         // Camera permission check
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED
@@ -71,14 +90,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun saveMatAsPNG(mat: Mat, path: String) {
+        try {
+            val bmp = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888)
+            Utils.matToBitmap(mat, bmp)
+            val file = File(path)
+            FileOutputStream(file).use { out ->
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            Log.d("FrameCapture", "Saved frame to $path")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
     private fun startCamera() {
         // Camera frame callback delivers a processed Mat
         cameraHelper.frameMatListener = { mat: Mat ->
+            latestFrame = mat.clone()
             // Process frame via JNI / OpenCV
             // Conditionally apply OpenCV edge processing
-            if (isEdgeMode) {
-                nativeLib.processFrame(mat.nativeObjAddr)
-            }
+            // Capture button saves the current frame
+            latestFrame = mat.clone() // only update latestFrame
+            if (isEdgeMode) nativeLib.processFrame(mat.nativeObjAddr)
+            glRenderer.updateTexture(mat)
 
             // Send processed frame to GLRenderer
             glRenderer.updateTexture(mat)
